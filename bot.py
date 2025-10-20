@@ -63,12 +63,23 @@ def init_db():
 def migrate_guild_settings():
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
+
+    # Create table if it doesn't exist (older versions may have had fewer columns)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS guild_settings (
-            guild_id INTEGER PRIMARY KEY,
-            announce_channel_id INTEGER
+            guild_id INTEGER PRIMARY KEY
+            -- columns may be added below by migration
         )
     """)
+
+    # Inspect existing columns
+    cur.execute("PRAGMA table_info(guild_settings)")
+    cols = {row[1] for row in cur.fetchall()}
+
+    # Add missing column(s) safely
+    if "announce_channel_id" not in cols:
+        cur.execute("ALTER TABLE guild_settings ADD COLUMN announce_channel_id INTEGER")
+
     con.commit()
     con.close()
 
@@ -313,7 +324,6 @@ def set_announce_channel(guild_id: int, channel_id: int):
 async def on_ready():
     init_db()
     migrate_guild_settings()
-    ensure_dir(USER_COUNTS_DIR)
     # Ensure base folder exists
     ensure_dir(USER_COUNTS_DIR)
 
@@ -398,13 +408,9 @@ async def lv(ctx: commands.Context, member: Optional[discord.Member] = None):
 
 @bot.command(name="lvup")
 @commands.has_permissions(manage_roles=True)
-async def lvup(ctx: commands.Context, channel_id: int):
+async def lvup(ctx: commands.Context, channel: discord.TextChannel):
     """Set the channel where level-up messages appear."""
-    channel = ctx.guild.get_channel(channel_id)
-    if not channel:
-        return await ctx.reply("❌ Invalid channel ID. Please make sure the channel exists.", mention_author=False)
-
-    set_announce_channel(ctx.guild.id, channel_id)
+    set_announce_channel(ctx.guild.id, channel.id)
     await ctx.reply(f"✅ Level-up announcements will now appear in {channel.mention}.", mention_author=False)
 
 @bot.command(name="lv_cooldown")
