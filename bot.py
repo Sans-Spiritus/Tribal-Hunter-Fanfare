@@ -60,6 +60,18 @@ def init_db():
     con.commit()
     con.close()
 
+def migrate_guild_settings():
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS guild_settings (
+            guild_id INTEGER PRIMARY KEY,
+            announce_channel_id INTEGER
+        )
+    """)
+    con.commit()
+    con.close()
+
 def get_live_count(guild_id: int, user_id: int) -> int:
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
@@ -257,9 +269,10 @@ async def ensure_lv_role(member: discord.Member, level_name: str):
 
 async def announce_level_up(guild: discord.Guild, target: discord.Member, level_name: str, total: int, fallback_channel):
     channel = fallback_channel
-    if ANNOUNCE_CHANNEL_ID:
-        ch = guild.get_channel(ANNOUNCE_CHANNEL_ID)
-        if isinstance(ch, (discord.TextChannel, discord.Thread)):
+    stored_id = get_announce_channel(guild.id)
+    if stored_id:
+        ch = guild.get_channel(stored_id)
+        if isinstance(ch, discord.TextChannel):
             channel = ch
 
     next_name, next_thr = get_next_threshold(total)
@@ -275,11 +288,32 @@ async def announce_level_up(guild: discord.Guild, target: discord.Member, level_
     except discord.Forbidden:
         await channel.send(f"🎉 {target.mention} reached **{level_name}**! ({total} messages)")
 
+def get_announce_channel(guild_id: int) -> Optional[int]:
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+    cur.execute("SELECT announce_channel_id FROM guild_settings WHERE guild_id=?", (guild_id,))
+    row = cur.fetchone()
+    con.close()
+    return row[0] if row and row[0] else None
+
+def set_announce_channel(guild_id: int, channel_id: int):
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+    cur.execute("""
+        INSERT INTO guild_settings (guild_id, announce_channel_id)
+        VALUES (?, ?)
+        ON CONFLICT(guild_id) DO UPDATE SET announce_channel_id=excluded.announce_channel_id
+    """, (guild_id, channel_id))
+    con.commit()
+    con.close()
+
 # ---------------- EVENTS ----------------
 
 @bot.event
 async def on_ready():
     init_db()
+    migrate_guild_settings()
+    ensure_dir(USER_COUNTS_DIR)
     # Ensure base folder exists
     ensure_dir(USER_COUNTS_DIR)
 
@@ -361,6 +395,17 @@ async def lv(ctx: commands.Context, member: Optional[discord.Member] = None):
 
     if changed:
         await announce_level_up(ctx.guild, target, level_name, total, ctx.channel)
+
+@bot.command(name="lvup")
+@commands.has_permissions(manage_roles=True)
+async def lvup(ctx: commands.Context, channel_id: int):
+    """Set the channel where level-up messages appear."""
+    channel = ctx.guild.get_channel(channel_id)
+    if not channel:
+        return await ctx.reply("❌ Invalid channel ID. Please make sure the channel exists.", mention_author=False)
+
+    set_announce_channel(ctx.guild.id, channel_id)
+    await ctx.reply(f"✅ Level-up announcements will now appear in {channel.mention}.", mention_author=False)
 
 @bot.command(name="lv_cooldown")
 @commands.has_permissions(manage_roles=True)
