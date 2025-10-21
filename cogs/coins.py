@@ -3,6 +3,7 @@ import os
 import time
 import sqlite3
 from typing import Tuple, Dict
+from cogs.utils.economy_adapter import EconomyAdapter
 
 import discord
 from discord.ext import commands
