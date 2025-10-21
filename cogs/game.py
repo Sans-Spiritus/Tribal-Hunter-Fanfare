@@ -3,6 +3,7 @@ import os
 import random
 import sqlite3
 from typing import Dict, Tuple, List
+from cogs.utils.economy_adapter import EconomyAdapter
 from cogs.utils.levels import _meets_level
 
 import discord
