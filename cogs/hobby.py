@@ -1,4 +1,5 @@
 from __future__ import annotations
+from cogs.utils.economy_adapter import EconomyAdapter
 cfg.cooldown = max(1, seconds)
 self.store.set_act(cfg)
 await ctx.reply(f"Updated cooldown for {act} → {cfg.cooldown}s")
