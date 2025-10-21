@@ -2,6 +2,7 @@
 import os
 import sqlite3
 from typing import List, Tuple
+from cogs.utils.economy_adapter import EconomyAdapter
 from cogs.utils.levels import _meets_level
 
 import discord
