@@ -24,6 +24,7 @@ class Shop(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.db_path = DB_PATH
+        self.economy = EconomyAdapter()
 
     # ---------- DB ----------
     def _con(self):
