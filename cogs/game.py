@@ -81,6 +81,7 @@ class Games(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.db_path = DB_PATH
+        self.economy = EconomyAdapter()
         # blackjack state: {(guild_id, user_id): {...}}
         self.bj_state: Dict[Tuple[int, int], dict] = {}
 
