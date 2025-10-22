@@ -20,6 +20,7 @@ class Coins(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.db_path = DB_PATH
+        self.economy = EconomyAdapter()
         # cache: {guild_id: (reward, cooldown, symbol)}
         self.settings_cache: Dict[int, Tuple[int, int, str]] = {}
 
