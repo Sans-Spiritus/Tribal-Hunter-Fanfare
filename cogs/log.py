@@ -20,18 +20,8 @@ from typing import Optional, Dict
 import discord
 from discord.ext import commands
 
-try:
-    # Python 3.9+
-    from zoneinfo import ZoneInfo  # type: ignore
-except Exception:
-    ZoneInfo = None  # type: ignore
-
-if 'ZoneInfo' in globals() and ZoneInfo is not None:
-    TZ_NY = ZoneInfo("America/New_York")
-else:
-    TZ_NY = None  # Fallback to naive if zoneinfo isn't available
-
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "log_config.json")
+ = os.path.join(os.path.dirname(__file__), "log_config.json")
 
 
 @dataclass
@@ -99,8 +89,13 @@ class LogCog(commands.Cog, name="Log"):
 
     @staticmethod
     def _now_text() -> str:
-        dt = datetime.now(tz=TZ_NY) if TZ_NY else datetime.now()
-        return dt.strftime("%H:%M:%S")  # 24h HH:MM:SS in US Eastern (auto-DST)
+        # Resolve Eastern time dynamically; if zoneinfo isn't available, fall back to UTC.
+        try:
+            from zoneinfo import ZoneInfo  # type: ignore
+            dt = datetime.now(tz=ZoneInfo("America/New_York"))
+        except Exception:
+            dt = datetime.utcnow()
+        return dt.strftime("%H:%M:%S")  # 24h HH:MM:SS
 
     @staticmethod
     def _safe_text(s: Optional[str], limit: int = 1200) -> str:
