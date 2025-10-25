@@ -23,8 +23,12 @@ from discord.ext import commands
 try:
     # Python 3.9+
     from zoneinfo import ZoneInfo  # type: ignore
-    TZ_NY = ZoneInfo("America/New_York")
 except Exception:
+    ZoneInfo = None  # type: ignore
+
+if 'ZoneInfo' in globals() and ZoneInfo is not None:
+    TZ_NY = ZoneInfo("America/New_York")
+else:
     TZ_NY = None  # Fallback to naive if zoneinfo isn't available
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "log_config.json")
