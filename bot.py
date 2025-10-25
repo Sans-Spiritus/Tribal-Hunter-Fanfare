@@ -375,6 +375,7 @@ async def setup_hook():
     await bot.load_extension("cogs.coins")
     await bot.load_extension("cogs.shop")
     await bot.load_extension("cogs.game")
+    await bot.load_extension("cogs.log")
 
 # ---------------- COMMANDS ----------------
 
